@@ -1,0 +1,11 @@
+[package]
+name = "gilt"
+version = "0.1.0"
+authors = ["Pawan Dubey <git@pawandubey.com>"]
+edition = "2018"
+license = "Apache-2.0"
+description = "Run commands across all your git repositories."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
