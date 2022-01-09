@@ -12,7 +12,6 @@ struct Options {
     colorize: bool,
 
     #[structopt(short, long)]
-    #[allow(dead_code)]
     follow_symlinks: bool,
 
     #[structopt(short, long, parse(from_os_str), env = "HOME")]
@@ -66,18 +65,14 @@ fn is_git_repository(path: &Path) -> bool {
 
     let has_dot_git = if let Ok(mut children) = fs::read_dir(path) {
         let mut count = 0;
-        let all = children.all(|c| {
-            count += 1;
-            let child = c.unwrap();
-            // child.path().is_dir() && child.file_name().to_str().map(|s| s.eq(".git")).unwrap();
+        let none = children
+            .any(|c| {
+                count += 1;
+                let child = c.unwrap();
+                child.path().is_dir() && child.file_name().to_str().map(|s| s.eq(".git")).unwrap()
+            });
 
-            if child.path().is_dir() {
-                println!("{}", child.file_name().to_str().unwrap());
-                child.file_name().to_str().unwrap() == ".git"
-            } else { false }
-        });
-
-        count > 0 && all
+        count > 0 && none
     } else {
         false
     };
@@ -105,9 +100,7 @@ fn main() {
             };
 
             if entry.file_type().is_dir() && is_git_repository(entry.path()) {
-                println!("Skipping: {:?}", entry);
-
-                repositories.push(entry.into_path());
+                repositories.push(entry.into_path().canonicalize().unwrap());
                 walker.skip_current_dir();
             }
             continue;
