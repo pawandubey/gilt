@@ -68,7 +68,7 @@ impl std::str::FromStr for OutputType {
 fn hidden(file_name: &OsStr) -> bool {
     file_name
         .to_str()
-        .map(|s| s.starts_with("."))
+        .map(|s| s.starts_with('.'))
         .unwrap_or(false)
 }
 
@@ -88,7 +88,7 @@ fn is_git_repository(path: &Path) -> bool {
         false
     };
 
-    return is_not_hidden && has_dot_git;
+    is_not_hidden && has_dot_git
 }
 
 fn main() {
@@ -140,10 +140,10 @@ fn main() {
 }
 
 #[cfg(unix)]
-fn exec(cmd: String, repo: &PathBuf, curr: &Path) -> Result<Output, &'static str> {
+fn exec(cmd: String, repo: &Path, curr: &Path) -> Result<Output, &'static str> {
     use std::env::set_current_dir;
 
-    match set_current_dir(repo.as_path()) {
+    match set_current_dir(repo) {
         Ok(_) => {
             let cmd_out = match Command::new("sh").arg("-c").arg(cmd).output() {
                 Ok(out) => Ok(out),
