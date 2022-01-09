@@ -1,6 +1,6 @@
 #[allow(unused_attributes, unused_imports, dead_code)]
 use std::path::PathBuf;
-use std::{ffi::OsStr, fs, path::Path};
+use std::{ffi::OsStr, fs, path::Path, process};
 use structopt::StructOpt;
 use walkdir::WalkDir;
 
@@ -107,6 +107,9 @@ fn main() {
         // process command in each repository and collect result
         // output result
         println!("{:?}", repositories)
+    } else {
+        eprintln!("{} is not a directory.", options.location.to_str().unwrap());
+        process::exit(exitcode::USAGE)
     }
 }
 
