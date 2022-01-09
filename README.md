@@ -2,7 +2,7 @@
 
 A lazy tool for lazy people. Runs a given command across all your local git repositories.
 
-⚠ Still a work in progress! Use at your own peril.
+> **⚠ Still a work in progress! Use at your own peril.**
 
 ## What
 
