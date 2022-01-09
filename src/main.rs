@@ -103,7 +103,6 @@ fn main() {
                 repositories.push(entry.into_path().canonicalize().unwrap());
                 walker.skip_current_dir();
             }
-            continue;
         }
         // process command in each repository and collect result
         // output result
@@ -212,7 +211,6 @@ mod tests {
         assert_eq!(".hidden", hidden_git_dir.file_name().unwrap());
         assert_eq!(false, is_git_repository(hidden_git_dir))
     }
-
     #[test]
     fn test_non_existent_git_dir_is_detected() {
         let dir = assert_fs::TempDir::new().unwrap();
