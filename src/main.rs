@@ -1,6 +1,6 @@
 #[allow(unused_attributes, unused_imports, dead_code)]
 use std::path::PathBuf;
-use std::{ffi::OsStr, fs, path::Path, process};
+use std::{ffi::OsStr, fs, path::Path, process::{Command, Output, self}, env::current_dir};
 use structopt::StructOpt;
 use walkdir::WalkDir;
 
@@ -105,12 +105,44 @@ fn main() {
             }
         }
         // process command in each repository and collect result
+        let current_dir = current_dir().expect("Could not get current directory.");
+        repositories.iter().for_each(|repo| {
+            match exec(options.exec.clone(), repo, &current_dir) {
+                Ok(out) => println!("({}): {}", repo.to_str().unwrap(), String::from_utf8_lossy(&out.stdout)),
+                Err(err) => eprintln!("{}", err)
+            }
+        });
+
         // output result
-        println!("{:?}", repositories)
+        // println!("{:?}", res)
     } else {
-        eprintln!("{} is not a directory.", options.location.to_str().unwrap());
+        eprintln!("{} is not a directory or does not exist.", options.location.to_str().unwrap());
         process::exit(exitcode::USAGE)
     }
+}
+
+#[cfg(unix)]
+fn exec(cmd: String, repo: &PathBuf, curr: &Path) -> Result<Output, &'static str> {
+    use std::env::set_current_dir;
+
+    match set_current_dir(repo.as_path()) {
+        Ok(_) => {
+            let cmd_out = match Command::new("sh").arg("-c").arg(cmd).output() {
+                Ok(out) => Ok(out),
+                _ => Err("Failed to run command")
+            };
+
+            set_current_dir(curr).expect("Failed to change back to original directory");
+
+            cmd_out
+        },
+        Err(_) => Err("Could not open dir")
+    }
+}
+
+#[cfg(windows)]
+fn exec(cmd: String, repo: &PathBuf) -> Result<process::Output, std::io::Error>{
+    todo()
 }
 
 #[cfg(test)]
