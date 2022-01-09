@@ -1,14 +1,16 @@
-# gilt
+# gilt (WIP)
 
 A lazy tool for lazy people. Runs a given command across all your local git repositories.
+
+⚠ Still a work in progress! Use at your own peril.
 
 ## What
 
 This is a simple tool that does a very simple thing: it takes a command and runs it in each git repository under a directory you point it to (default: `$HOME`). It then collates the result and prints them out per repository. That's it.
 
 In addition, it has some quality-of-life options:
-- Colorize (slightly) the default output.
-- Output the result as JSON in case you want to pipe it into another program like `jq`.
+- [] (WIP) Colorize (slightly) the default output.
+- [] (WIP) Output the result as JSON in case you want to pipe it into another program like `jq`.
 
 ## How
 
