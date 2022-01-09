@@ -11,13 +11,13 @@ struct Options {
     #[allow(dead_code)]
     colorize: bool,
 
-    #[structopt(short, long)]
+    #[structopt(short, long, help = "Follows symlinks, panicking on loops")]
     follow_symlinks: bool,
 
-    #[structopt(short, long, parse(from_os_str), env = "HOME")]
+    #[structopt(short, long, parse(from_os_str), env = "HOME", help = "The location to scan for repositories")]
     location: PathBuf,
 
-    #[structopt(short, long, parse(from_str))]
+    #[structopt(short, long, parse(from_str), help = "The command to execute")]
     #[allow(dead_code)]
     exec: String,
 
@@ -171,6 +171,20 @@ mod tests {
         let dir = assert_fs::TempDir::new().unwrap();
         let file = dir.child("repo/.git/foo");
         file.touch().unwrap();
+        let git_dir = file.parent().unwrap().parent().unwrap();
+
+        assert_eq!("repo", git_dir.file_name().unwrap());
+        assert_eq!(true, is_git_repository(git_dir))
+    }
+
+    #[test]
+    fn test_git_repository_with_multiple_subdirs_is_detected() {
+        let dir = assert_fs::TempDir::new().unwrap();
+        let mut file = dir.child("repo/.git/foo");
+        file.touch().unwrap();
+        file = dir.child("repo/src/foo.rs");
+        file.touch().unwrap();
+
         let git_dir = file.parent().unwrap().parent().unwrap();
 
         assert_eq!("repo", git_dir.file_name().unwrap());
