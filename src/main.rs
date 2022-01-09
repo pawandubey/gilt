@@ -1,6 +1,12 @@
 #[allow(unused_attributes, unused_imports, dead_code)]
 use std::path::PathBuf;
-use std::{ffi::OsStr, fs, path::Path, process::{Command, Output, self}, env::current_dir};
+use std::{
+    env::current_dir,
+    ffi::OsStr,
+    fs,
+    path::Path,
+    process::{self, Command, Output},
+};
 use structopt::StructOpt;
 use walkdir::WalkDir;
 
@@ -14,7 +20,13 @@ struct Options {
     #[structopt(short, long, help = "Follows symlinks, panicking on loops")]
     follow_symlinks: bool,
 
-    #[structopt(short, long, parse(from_os_str), env = "HOME", help = "The location to scan for repositories")]
+    #[structopt(
+        short,
+        long,
+        parse(from_os_str),
+        env = "HOME",
+        help = "The location to scan for repositories"
+    )]
     location: PathBuf,
 
     #[structopt(short, long, parse(from_str), help = "The command to execute")]
@@ -65,12 +77,11 @@ fn is_git_repository(path: &Path) -> bool {
 
     let has_dot_git = if let Ok(mut children) = fs::read_dir(path) {
         let mut count = 0;
-        let none = children
-            .any(|c| {
-                count += 1;
-                let child = c.unwrap();
-                child.path().is_dir() && child.file_name().to_str().map(|s| s.eq(".git")).unwrap()
-            });
+        let none = children.any(|c| {
+            count += 1;
+            let child = c.unwrap();
+            child.path().is_dir() && child.file_name().to_str().map(|s| s.eq(".git")).unwrap()
+        });
 
         count > 0 && none
     } else {
@@ -106,17 +117,24 @@ fn main() {
         }
         // process command in each repository and collect result
         let current_dir = current_dir().expect("Could not get current directory.");
-        repositories.iter().for_each(|repo| {
-            match exec(options.exec.clone(), repo, &current_dir) {
-                Ok(out) => println!("({}): {}", repo.to_str().unwrap(), String::from_utf8_lossy(&out.stdout)),
-                Err(err) => eprintln!("{}", err)
-            }
-        });
+        repositories.iter().for_each(
+            |repo| match exec(options.exec.clone(), repo, &current_dir) {
+                Ok(out) => println!(
+                    "({}): {}",
+                    repo.to_str().unwrap(),
+                    String::from_utf8_lossy(&out.stdout)
+                ),
+                Err(err) => eprintln!("{}", err),
+            },
+        );
 
         // output result
         // println!("{:?}", res)
     } else {
-        eprintln!("{} is not a directory or does not exist.", options.location.to_str().unwrap());
+        eprintln!(
+            "{} is not a directory or does not exist.",
+            options.location.to_str().unwrap()
+        );
         process::exit(exitcode::USAGE)
     }
 }
@@ -129,19 +147,19 @@ fn exec(cmd: String, repo: &PathBuf, curr: &Path) -> Result<Output, &'static str
         Ok(_) => {
             let cmd_out = match Command::new("sh").arg("-c").arg(cmd).output() {
                 Ok(out) => Ok(out),
-                _ => Err("Failed to run command")
+                _ => Err("Failed to run command"),
             };
 
             set_current_dir(curr).expect("Failed to change back to original directory");
 
             cmd_out
-        },
-        Err(_) => Err("Could not open dir")
+        }
+        Err(_) => Err("Could not open dir"),
     }
 }
 
 #[cfg(windows)]
-fn exec(cmd: String, repo: &PathBuf) -> Result<process::Output, std::io::Error>{
+fn exec(cmd: String, repo: &PathBuf) -> Result<process::Output, std::io::Error> {
     todo()
 }
 
