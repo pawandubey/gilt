@@ -10,6 +10,10 @@ use std::{
 use structopt::StructOpt;
 use walkdir::WalkDir;
 
+mod rendering;
+
+use rendering::Render;
+
 #[derive(Debug, StructOpt)]
 #[structopt()]
 struct Options {
@@ -39,7 +43,7 @@ struct Options {
 }
 
 #[derive(Debug)]
-enum OutputType {
+pub enum OutputType {
     Stdin,
     Json,
 }
@@ -107,6 +111,8 @@ fn main() {
     // collect all repositories under path
     // - check that provided path is a directory
     if options.location.is_dir() {
+        let mut renderer = rendering::get_renderer(options.output);
+
         // - start traversal
         let mut walker = WalkDir::new(options.location)
             .follow_links(options.follow_symlinks)
@@ -131,16 +137,12 @@ fn main() {
         repositories
             .iter()
             .for_each(|repo| match exec(&cmd, repo, &current_dir) {
-                Ok(out) => println!(
-                    "({}): {}",
-                    repo.to_str().unwrap(),
-                    String::from_utf8_lossy(&out.stdout)
-                ),
+                Ok(out) => renderer.log(out, repo).unwrap_or_else(
+                    |e| {
+                        eprintln!("{}", e);
+                    }),
                 Err(err) => eprintln!("{}", err),
             });
-
-        // output result
-        // println!("{:?}", res)
     } else {
         eprintln!(
             "{} is not a directory or does not exist.",
@@ -151,7 +153,7 @@ fn main() {
 }
 
 #[cfg(unix)]
-fn exec(cmd: &Vec<String>, repo: &Path, curr: &Path) -> Result<Output, &'static str> {
+fn exec(cmd: &[String], repo: &Path, curr: &Path) -> Result<Output, &'static str> {
     use std::env::set_current_dir;
 
     match set_current_dir(repo) {
@@ -185,7 +187,7 @@ mod tests {
         let file = assert_fs::NamedTempFile::new(".secret").unwrap();
 
         assert_eq!(".secret", file.file_name().unwrap().to_str().unwrap());
-        assert_eq!(true, hidden(file.file_name().unwrap()));
+        assert!(hidden(file.file_name().unwrap()));
 
         file.close().unwrap()
     }
@@ -198,7 +200,7 @@ mod tests {
         let hidden_dir = file.parent().unwrap();
 
         assert_eq!(".secret", hidden_dir.file_name().unwrap().to_str().unwrap());
-        assert_eq!(true, hidden(hidden_dir.file_name().unwrap()));
+        assert!(hidden(hidden_dir.file_name().unwrap()));
 
         dir.close().unwrap();
     }
@@ -208,7 +210,7 @@ mod tests {
         let file = assert_fs::NamedTempFile::new("visible.txt").unwrap();
 
         assert_eq!("visible.txt", file.file_name().unwrap().to_str().unwrap());
-        assert_eq!(false, hidden(file.file_name().unwrap()));
+        assert!(!hidden(file.file_name().unwrap()));
 
         file.close().unwrap()
     }
@@ -224,7 +226,7 @@ mod tests {
             "visible",
             visible_dir.file_name().unwrap().to_str().unwrap()
         );
-        assert_eq!(false, hidden(visible_dir.file_name().unwrap()));
+        assert!(!hidden(visible_dir.file_name().unwrap()));
 
         dir.close().unwrap();
     }
@@ -237,7 +239,7 @@ mod tests {
         let git_dir = file.parent().unwrap().parent().unwrap();
 
         assert_eq!("repo", git_dir.file_name().unwrap());
-        assert_eq!(true, is_git_repository(git_dir))
+        assert!(is_git_repository(git_dir))
     }
 
     #[test]
@@ -251,7 +253,7 @@ mod tests {
         let git_dir = file.parent().unwrap().parent().unwrap();
 
         assert_eq!("repo", git_dir.file_name().unwrap());
-        assert_eq!(true, is_git_repository(git_dir))
+        assert!(is_git_repository(git_dir))
     }
 
     #[test]
@@ -262,7 +264,7 @@ mod tests {
         let non_git_dir = file.parent().unwrap().parent().unwrap();
 
         assert_eq!("not_repo", non_git_dir.file_name().unwrap());
-        assert_eq!(false, is_git_repository(non_git_dir))
+        assert!(!is_git_repository(non_git_dir))
     }
 
     #[test]
@@ -273,7 +275,7 @@ mod tests {
         let hidden_git_dir = file.parent().unwrap().parent().unwrap();
 
         assert_eq!(".hidden", hidden_git_dir.file_name().unwrap());
-        assert_eq!(false, is_git_repository(hidden_git_dir))
+        assert!(!is_git_repository(hidden_git_dir))
     }
     #[test]
     fn test_non_existent_git_dir_is_detected() {
@@ -281,14 +283,14 @@ mod tests {
         let file = dir.child(".hidden/.git/foo");
         let non_existent_git_dir = file.parent().unwrap().parent().unwrap();
 
-        assert_eq!(false, non_existent_git_dir.exists());
-        assert_eq!(false, is_git_repository(non_existent_git_dir));
+        assert!(!non_existent_git_dir.exists());
+        assert!(!is_git_repository(non_existent_git_dir));
     }
 
     #[test]
     fn test_empty_dir_is_detected() {
         let dir = assert_fs::TempDir::new().unwrap();
 
-        assert_eq!(false, is_git_repository(dir.path()));
+        assert!(!is_git_repository(dir.path()));
     }
 }
