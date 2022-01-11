@@ -93,6 +93,17 @@ fn is_git_repository(path: &Path) -> bool {
 
 fn main() {
     let options = Options::from_args();
+
+    let cmd: Vec<String>;
+
+    match shellwords::split(&options.exec) {
+        Ok(args) => cmd = args,
+        Err(_) => {
+            eprintln!("Failed to parse exec string");
+            process::exit(exitcode::USAGE)
+        }
+    }
+
     // collect all repositories under path
     // - check that provided path is a directory
     if options.location.is_dir() {
@@ -117,16 +128,16 @@ fn main() {
         }
         // process command in each repository and collect result
         let current_dir = current_dir().expect("Could not get current directory.");
-        repositories.iter().for_each(
-            |repo| match exec(options.exec.clone(), repo, &current_dir) {
+        repositories
+            .iter()
+            .for_each(|repo| match exec(&cmd, repo, &current_dir) {
                 Ok(out) => println!(
                     "({}): {}",
                     repo.to_str().unwrap(),
                     String::from_utf8_lossy(&out.stdout)
                 ),
                 Err(err) => eprintln!("{}", err),
-            },
-        );
+            });
 
         // output result
         // println!("{:?}", res)
@@ -140,12 +151,12 @@ fn main() {
 }
 
 #[cfg(unix)]
-fn exec(cmd: String, repo: &Path, curr: &Path) -> Result<Output, &'static str> {
+fn exec(cmd: &Vec<String>, repo: &Path, curr: &Path) -> Result<Output, &'static str> {
     use std::env::set_current_dir;
 
     match set_current_dir(repo) {
         Ok(_) => {
-            let cmd_out = match Command::new("sh").arg("-c").arg(cmd).output() {
+            let cmd_out = match Command::new(&cmd[0]).args(&cmd[1..]).output() {
                 Ok(out) => Ok(out),
                 _ => Err("Failed to run command"),
             };
