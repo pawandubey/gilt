@@ -143,6 +143,8 @@ fn main() {
                     }),
                 Err(err) => eprintln!("{}", err),
             });
+
+        print!("{}", renderer.render())
     } else {
         eprintln!(
             "{} is not a directory or does not exist.",
