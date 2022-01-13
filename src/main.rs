@@ -1,4 +1,3 @@
-#[allow(unused_attributes, unused_imports, dead_code)]
 use std::path::PathBuf;
 use std::{
     env::current_dir,
@@ -43,7 +42,7 @@ struct Options {
 }
 
 #[derive(Debug)]
-pub enum OutputType {
+enum OutputType {
     Stdin,
     Json,
 }
