@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::fmt::Write;
 use std::{path::Path, process::Output};
 
@@ -15,12 +16,12 @@ impl Stringify for Output {
 
 type Err = String;
 
-pub(crate) fn get_renderer(_output_type: OutputType) -> impl Render {
+pub(crate) fn get_renderer<'a>(_output_type: OutputType) -> impl Render<'a> {
     StdinRenderer::new()
 }
 
-pub(crate) trait Render {
-    fn log(&mut self, out: impl Stringify, repo: &Path) -> Result<(), Err>;
+pub(crate) trait Render <'a> {
+    fn log(&mut self, out: impl Stringify, repo: &'a Path) -> Result<(), Err>;
 
     fn render(&self) -> &str;
 }
@@ -38,8 +39,8 @@ impl StdinRenderer {
     }
 }
 
-impl Render for StdinRenderer {
-    fn log(&mut self, out: impl Stringify, repo: &Path) -> Result<(), Err> {
+impl <'a> Render<'a> for StdinRenderer {
+    fn log(&mut self, out: impl Stringify, repo: &'a Path) -> Result<(), Err> {
         writeln!(
             self.buffer,
             "({}): {}",
@@ -57,6 +58,24 @@ impl Render for StdinRenderer {
 
     fn render(&self) -> &str {
         self.buffer.as_str()
+    }
+}
+
+#[derive(Default)]
+struct JSONRenderer<'a> {
+    buffer: HashMap<&'a str, &'a str>,
+}
+
+impl <'a> Render<'a> for JSONRenderer<'a> {
+    fn log(&mut self, out: impl Stringify, repo: &'a Path) -> Result<(), Err> {
+        let key = repo.to_str().unwrap();
+        let val = out.stringify();
+        self.buffer.insert(key, val.as_str());
+        Ok(())
+    }
+
+    fn render(&self) -> &str {
+        todo!()
     }
 }
 
